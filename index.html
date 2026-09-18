@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="査定">
+<meta name="theme-color" content="#E3E3DF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#191A17" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>ジュエリー査定</title>
+<style>
+  :root{
+    --tray:#E3E3DF;
+    --slip:#FCFCFA;
+    --ink:#1B1C19;
+    --soft:#6E7069;
+    --rule:#CDCDC6;
+    --gold:#8E6B23;
+    --plat:#42545C;
+    --silver:#78848B;
+    --accent:var(--gold);
+    --hint:#B9B9B1;
+    --warn:#8C3A22;
+    --bar-bg:#1B1C19;
+    --bar-fg:#F5F3EE;
+    --serif:"Hiragino Mincho ProN","Yu Mincho",YuMincho,"Times New Roman",serif;
+    --sans:-apple-system,"Helvetica Neue","Hiragino Sans",Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --tray:#191A17;
+      --slip:#23241F;
+      --ink:#EDEBE4;
+      --soft:#9A9B92;
+      --rule:#3A3B35;
+      --gold:#C9A24B;
+      --plat:#8FA6B0;
+      --silver:#9AA7AD;
+      --hint:#5E5F58;
+      --warn:#E09070;
+      --bar-bg:#0E0F0D;
+      --bar-fg:#F0EDE4;
+    }
+  }
+  :root[data-theme="dark"]{
+    --tray:#191A17;
+    --slip:#23241F;
+    --ink:#EDEBE4;
+    --soft:#9A9B92;
+    --rule:#3A3B35;
+    --gold:#C9A24B;
+    --plat:#8FA6B0;
+    --silver:#9AA7AD;
+    --hint:#5E5F58;
+    --warn:#E09070;
+    --bar-bg:#0E0F0D;
+    --bar-fg:#F0EDE4;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--tray);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:16px;
+    line-height:1.5;
+    padding:0 14px 132px;
+  }
+  main{max-width:520px;margin:0 auto}
+
+  header{padding:26px 2px 16px}
+  h1{
+    font-family:var(--serif);
+    font-size:21px;
+    font-weight:600;
+    letter-spacing:.14em;
+    margin:0;
+  }
+  header p{margin:4px 0 0;font-size:12.5px;color:var(--soft)}
+
+  section{
+    background:var(--slip);
+    border:1px solid var(--rule);
+    border-radius:3px;
+    padding:14px 14px 16px;
+    margin-bottom:12px;
+  }
+  h2{
+    font-family:var(--serif);
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:.1em;
+    margin:0 0 10px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  h2 .count{font-family:var(--sans);font-size:11px;letter-spacing:0;color:var(--soft)}
+
+  input[type=text]{
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    font-family:var(--sans);
+    font-size:16px;
+    text-align:right;
+    color:var(--ink);
+    background:transparent;
+    border:0;
+    border-bottom:1px solid var(--rule);
+    border-radius:0;
+    padding:5px 2px;
+    width:100%;
+    min-width:0;
+    -webkit-appearance:none;
+  }
+  input[type=text]:focus{outline:none;border-bottom-color:var(--accent);border-bottom-width:2px;padding-bottom:4px}
+  input::placeholder{color:var(--hint)}
+
+  /* 地金 */
+  .mrow{display:flex;align-items:center;gap:10px;padding:3px 0}
+  .mname{
+    flex:0 0 74px;
+    font-family:var(--sans);
+    font-size:13px;
+    letter-spacing:.04em;
+    color:var(--soft);
+    background:transparent;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    padding:7px 0;
+    cursor:pointer;
+  }
+  .mrow.on .mname{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .mrow.on input[type=text]{color:var(--ink);font-weight:600}
+  .munit{flex:0 0 34px;font-size:11.5px;color:var(--soft)}
+
+  /* 汎用フィールド */
+  .field{display:flex;align-items:center;gap:10px}
+  .field .flabel{flex:0 0 74px;font-family:var(--serif);font-size:13.5px}
+  .field .funit{flex:0 0 34px;font-size:11.5px;color:var(--soft)}
+
+  .switch{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;color:var(--soft)}
+  .switch input{width:17px;height:17px;accent-color:var(--gold);margin:0}
+
+  /* 石 */
+  .srow{border-top:1px solid var(--rule);padding:9px 0 4px}
+  .srow:first-child{border-top:0;padding-top:0}
+  .shead{display:flex;align-items:baseline;gap:8px}
+  .slabel{font-family:var(--serif);font-size:13px;flex:1}
+  .samt{font-size:13px;font-variant-numeric:tabular-nums}
+  .sdel{
+    border:0;background:transparent;color:var(--soft);
+    font-size:17px;line-height:1;padding:2px 0 2px 10px;cursor:pointer;
+  }
+  .sfields{display:flex;gap:16px;margin-top:2px}
+  .sf{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+  .sf em{font-style:normal;font-size:11.5px;color:var(--soft);flex:0 0 auto}
+  .add{
+    width:100%;margin-top:12px;
+    font-family:var(--serif);font-size:13px;letter-spacing:.08em;
+    color:var(--ink);background:transparent;
+    border:1px dashed var(--rule);border-radius:2px;
+    padding:9px 0;cursor:pointer;
+  }
+  .add:disabled{color:var(--hint);border-style:solid;cursor:default}
+
+  /* 内訳 */
+  .brow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:7px 0;border-top:1px solid var(--rule)}
+  .brow:first-of-type{border-top:0;padding-top:0}
+  .bname{font-family:var(--serif);font-size:13.5px}
+  .bnote{display:block;font-family:var(--sans);font-size:11px;color:var(--soft)}
+  .bval{font-size:15px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .warn{margin:10px 0 0;font-size:12px;line-height:1.4;color:var(--warn);min-height:2.8em;visibility:hidden}
+  .warn.on{visibility:visible}
+
+  .tools{display:flex;gap:8px;margin-top:2px}
+  .tools button{
+    flex:1;font-family:var(--serif);font-size:12.5px;letter-spacing:.06em;
+    color:var(--soft);background:transparent;border:1px solid var(--rule);
+    border-radius:2px;padding:9px 0;cursor:pointer;
+  }
+
+  /* モード切替 */
+  .modes{
+    display:flex;background:var(--slip);
+    border:1px solid var(--rule);border-radius:3px;
+    overflow:hidden;margin-bottom:12px;
+  }
+  .modes button{
+    flex:1;font-family:var(--serif);font-size:13px;letter-spacing:.06em;
+    color:var(--soft);background:transparent;border:0;padding:11px 0;cursor:pointer;
+  }
+  .modes button.on{background:var(--bar-bg);color:var(--bar-fg)}
+  .revonly{display:none}
+  body.rev .revonly{display:block}
+  input.derived{
+    color:var(--ink);font-weight:600;
+    border-bottom-style:dashed;
+  }
+
+  /* 入力中のフィールド */
+  input.active{
+    border-bottom-color:var(--accent);
+    border-bottom-width:2px;
+    padding-bottom:4px;
+    font-weight:600;
+  }
+
+  /* 下部ドック */
+  #dock{position:fixed;left:0;right:0;bottom:0;z-index:10;transform:translateZ(0)}
+  .bar{
+    background:var(--bar-bg);color:var(--bar-fg);
+    padding:13px 18px;
+    display:flex;align-items:baseline;justify-content:space-between;
+  }
+  body:not(.pad-on) .bar{padding-bottom:calc(13px + env(safe-area-inset-bottom))}
+  .pad{
+    display:none;
+    grid-template-columns:repeat(4,1fr);
+    grid-auto-rows:52px;
+    gap:6px;
+    background:var(--slip);
+    border-top:1px solid var(--rule);
+    padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+  }
+  body.pad-on .pad{display:grid}
+  body.pad-on{padding-bottom:340px}
+  .pad button{
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    font-family:var(--sans);font-size:20px;color:var(--ink);
+    background:var(--tray);border:1px solid var(--rule);border-radius:4px;
+    cursor:pointer;
+  }
+  .pad button:active{background:var(--rule)}
+  .pad .util{font-size:14px;font-family:var(--serif);letter-spacing:.06em}
+  .pad .go{
+    grid-row:span 2;
+    background:var(--accent);border-color:var(--accent);color:#fff;
+    font-family:var(--serif);font-size:15px;letter-spacing:.08em;
+  }
+  .pad .zeros{font-size:16px}
+  .bar .lbl{font-family:var(--serif);font-size:13px;letter-spacing:.16em}
+  .bar .val{font-size:27px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+
+  .toast{
+    position:fixed;left:50%;bottom:104px;transform:translateX(-50%);
+    background:var(--bar-bg);color:var(--bar-fg);font-size:12.5px;
+    padding:8px 16px;border-radius:2px;opacity:0;pointer-events:none;transition:opacity .2s;
+  }
+  .toast.on{opacity:.95}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>ジュエリー査定</h1>
+    <p>地金相場と石の想定買値から買取金額を出します</p>
+  </header>
+
+  <div class="modes">
+    <button type="button" id="mfwd" class="on">積み上げ</button>
+    <button type="button" id="mrev">合計から逆算</button>
+  </div>
+
+  <section class="revonly">
+    <h2>合計金額<span class="count">中石の買値を逆算します</span></h2>
+    <div class="field">
+      <span class="flabel">買取合計</span>
+      <input type="text" id="goal" inputmode="numeric" placeholder="0">
+      <span class="funit">円</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>地金<span class="count">相場を入力し、対象をタップ</span></h2>
+    <div id="metals"></div>
+  </section>
+
+  <section>
+    <h2>重量</h2>
+    <div class="field">
+      <span class="flabel">総重量</span>
+      <input type="text" id="weight" inputmode="decimal" placeholder="0.00">
+      <span class="funit">g</span>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="convert" checked>
+      石目を重量に換算して引く（1ct = 0.2g）
+    </label>
+  </section>
+
+  <section>
+    <h2>中石<span class="count" id="ccount">1 / 6</span></h2>
+    <div id="center"></div>
+    <button class="add" id="addc">中石を追加</button>
+  </section>
+
+  <section>
+    <h2>脇石<span class="count" id="scount">1 / 6</span></h2>
+    <div id="side"></div>
+    <button class="add" id="adds">脇石を追加</button>
+  </section>
+
+  <section>
+    <h2>内訳</h2>
+    <div class="brow">
+      <span class="bname">地金<span class="bnote" id="mnote">K18　0.00g × 0円</span></span>
+      <span class="bval" id="mval">¥0</span>
+    </div>
+    <div class="brow">
+      <span class="bname">中石<span class="bnote" id="cnote">0.00ct</span></span>
+      <span class="bval" id="cval">¥0</span>
+    </div>
+    <div class="brow">
+      <span class="bname">脇石<span class="bnote" id="snote">0.00ct</span></span>
+      <span class="bval" id="sval">¥0</span>
+    </div>
+    <p class="warn" id="warn">石目の合計が総重量を超えています。地金は0gとして計算しました。</p>
+  </section>
+
+  <div class="tools">
+    <button id="copy">内訳コピー</button>
+    <button id="embed">相場を保存</button>
+    <button id="reset">入力を消す</button>
+  </div>
+</main>
+
+<div id="dock">
+  <div class="bar">
+    <span class="lbl">合計</span>
+    <span class="val" id="total">¥0</span>
+  </div>
+  <div class="pad" id="pad">
+    <button type="button" data-k="7">7</button>
+    <button type="button" data-k="8">8</button>
+    <button type="button" data-k="9">9</button>
+    <button type="button" class="util" data-k="del">⌫</button>
+    <button type="button" data-k="4">4</button>
+    <button type="button" data-k="5">5</button>
+    <button type="button" data-k="6">6</button>
+    <button type="button" class="util" data-k="done">完了</button>
+    <button type="button" data-k="1">1</button>
+    <button type="button" data-k="2">2</button>
+    <button type="button" data-k="3">3</button>
+    <button type="button" class="go" data-k="next">次へ</button>
+    <button type="button" data-k=".">.</button>
+    <button type="button" data-k="0">0</button>
+    <button type="button" class="zeros" data-k="000">000</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var DEFAULTS = {"selected":"K18","rates":{}}; /*RATES*/
+  var MAX = 6, CT_G = 0.2;
+  var METALS = [
+    {id:'K18',   c:'var(--gold)'},
+    {id:'K14',   c:'var(--gold)'},
+    {id:'K10',   c:'var(--gold)'},
+    {id:'PT950', c:'var(--plat)'},
+    {id:'PT900', c:'var(--plat)'},
+    {id:'PT850', c:'var(--plat)'},
+    {id:'SV',    c:'var(--silver)'}
+  ];
+  var selected = 'K18';
+  var mode = 'fwd';
+  var $ = function(id){ return document.getElementById(id); };
+  var num = function(el){ var v = parseFloat(String(el.value).replace(/[^0-9.\-]/g,'')); return isFinite(v) && v > 0 ? v : 0; };
+  var yen = function(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); };
+
+  /* ---- 地金 ---- */
+  var metalBox = $('metals');
+  METALS.forEach(function(m){
+    var row = document.createElement('div');
+    row.className = 'mrow';
+    row.dataset.id = m.id;
+    row.style.setProperty('--accent', m.c);
+    row.innerHTML =
+      '<button type="button" class="mname">' + m.id + '</button>' +
+      '<input type="text" class="mrate" inputmode="decimal" placeholder="0">' +
+      '<span class="munit">円/g</span>';
+    row.querySelector('.mname').addEventListener('click', function(){
+      selected = m.id;
+      paintMetals();
+      calc();
+      save();
+    });
+    wire(row.querySelector('.mrate'));
+    metalBox.appendChild(row);
+  });
+  function paintMetals(){
+    Array.prototype.forEach.call(metalBox.children, function(row){
+      row.classList.toggle('on', row.dataset.id === selected);
+    });
+    var on = metalBox.querySelector('.mrow.on');
+    document.documentElement.style.setProperty('--accent', on ? getComputedStyle(on).getPropertyValue('--accent') : 'var(--gold)');
+  }
+  function rateOf(id){
+    var row = metalBox.querySelector('.mrow[data-id="' + id + '"]');
+    return row ? num(row.querySelector('.mrate')) : 0;
+  }
+
+  /* ---- 石 ---- */
+  function addStone(kind, focusIt){
+    var box = $(kind === 'c' ? 'center' : 'side');
+    if (box.children.length >= MAX) return;
+    var row = document.createElement('div');
+    row.className = 'srow';
+    row.innerHTML =
+      '<div class="shead"><span class="slabel"></span><span class="samt">¥0</span>' +
+      '<button type="button" class="sdel" aria-label="この石を削除">×</button></div>' +
+      '<div class="sfields">' +
+        '<span class="sf"><input type="text" class="sct" inputmode="decimal" placeholder="0.00"><em>ct</em></span>' +
+        '<span class="sf"><input type="text" class="sunit" inputmode="decimal" placeholder="0"><em>円/ct</em></span>' +
+      '</div>';
+    row.querySelector('.sdel').addEventListener('click', function(){
+      if (active && row.contains(active)) closePad();
+      row.remove();
+      renumber(kind);
+      calc();
+    });
+    Array.prototype.forEach.call(row.querySelectorAll('input'), wire);
+    box.appendChild(row);
+    if (kind === 'c') applyMode(row);
+    renumber(kind);
+    calc();
+    if (focusIt) focusField(row.querySelector('.sct'));
+  }
+  function renumber(kind){
+    var box  = $(kind === 'c' ? 'center' : 'side');
+    var name = kind === 'c' ? '中石' : '脇石';
+    var n    = box.children.length;
+    Array.prototype.forEach.call(box.children, function(row, i){
+      row.querySelector('.slabel').textContent = name + ' ' + (i + 1);
+      row.querySelector('.sdel').style.visibility = n > 1 ? 'visible' : 'hidden';
+    });
+    $(kind === 'c' ? 'ccount' : 'scount').textContent = n + ' / ' + MAX;
+    $(kind === 'c' ? 'addc' : 'adds').disabled = n >= MAX;
+  }
+  function boxOf(kind){ return $(kind === 'c' ? 'center' : 'side'); }
+  function ctOf(kind){
+    var ct = 0;
+    Array.prototype.forEach.call(boxOf(kind).children, function(row){
+      ct += num(row.querySelector('.sct'));
+    });
+    return ct;
+  }
+  /* forced が数値なら、その単価を各行に書き込んで集計する（逆算用） */
+  function sumStones(kind, forced){
+    var ct = 0, amt = 0;
+    Array.prototype.forEach.call(boxOf(kind).children, function(row){
+      var f = row.querySelector('.sunit');
+      if (forced !== undefined) f.value = forced > 0 ? String(forced) : '';
+      var c = num(row.querySelector('.sct'));
+      var u = num(f);
+      ct += c; amt += c * u;
+      row.querySelector('.samt').textContent = yen(c * u);
+    });
+    return {ct:ct, amt:amt};
+  }
+  function applyMode(row){
+    row.querySelector('.sunit').classList.toggle('derived', mode === 'rev');
+  }
+  function setMode(m){
+    mode = m;
+    document.body.classList.toggle('rev', m === 'rev');
+    $('mfwd').classList.toggle('on', m === 'fwd');
+    $('mrev').classList.toggle('on', m === 'rev');
+    Array.prototype.forEach.call(boxOf('c').children, applyMode);
+    closePad();
+    calc();
+  }
+
+  /* ---- テンキー入力 ---- */
+  var active = null, fresh = false, lastTap = 0;
+  /* pointerdown で処理し、既定動作を止めてフォーカス移動と拡大を防ぐ */
+  function tap(el, fn){
+    el.addEventListener('pointerdown', function(e){
+      e.preventDefault();
+      lastTap = Date.now();
+      fn(e);
+    });
+    el.addEventListener('click', function(e){
+      e.preventDefault();
+      if (Date.now() - lastTap > 400) fn(e);
+    });
+  }
+  function wire(el){
+    el.setAttribute('readonly','readonly');
+    el.setAttribute('tabindex','-1');
+    tap(el, function(){ focusField(el); });
+  }
+  function fields(){
+    var l = [];
+    var sel = metalBox.querySelector('.mrow.on .mrate');
+    if (sel) l.push(sel);
+    if (mode === 'rev') l.push($('goal'));
+    l.push($('weight'));
+    ['c','s'].forEach(function(k){
+      Array.prototype.forEach.call(boxOf(k).children, function(row){
+        l.push(row.querySelector('.sct'));
+        var u = row.querySelector('.sunit');
+        if (!u.classList.contains('derived')) l.push(u);
+      });
+    });
+    return l;
+  }
+  function focusField(el){
+    if (!el || el.classList.contains('derived')) return closePad();
+    if (active) active.classList.remove('active');
+    active = el;
+    fresh = true;
+    el.classList.add('active');
+    document.body.classList.add('pad-on');
+    try{
+      var r = el.getBoundingClientRect();
+      var top = 70, bottom = window.innerHeight - 350;
+      if (el.scrollIntoView && (r.top < top || r.bottom > bottom)){
+        el.scrollIntoView({block:'center', behavior:'smooth'});
+      }
+    }catch(e){}
+  }
+  function closePad(){
+    if (active) active.classList.remove('active');
+    active = null;
+    document.body.classList.remove('pad-on');
+  }
+  function nextField(){
+    var l = fields(), i = l.indexOf(active);
+    focusField(i >= 0 && i < l.length - 1 ? l[i + 1] : null);
+  }
+  function press(k){
+    if (!active) return;
+    if (k === 'next'){ nextField(); }
+    else if (k === 'done'){ closePad(); }
+    else if (k === 'del'){ active.value = String(active.value).slice(0, -1); fresh = false; }
+    else {
+      if (fresh && k === '000') k = '0';
+      var v = fresh ? '' : String(active.value);
+      if (k === '.'){
+        if (v.indexOf('.') >= 0) return;
+        if (v === '') v = '0';
+      }
+      active.value = v + k;
+      fresh = false;
+    }
+    calc();
+    save();
+  }
+  tap($('pad'), function(e){
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if (b) press(b.dataset.k);
+  });
+  var last = {};
+  function calc(){
+    var rate  = rateOf(selected);
+    var total = num($('weight'));
+    var stoneCt = ctOf('c') + ctOf('s');
+    var deduct  = $('convert').checked ? stoneCt * CT_G : stoneCt;
+    var metalG  = total - deduct;
+    var over    = metalG < 0;
+    if (over) metalG = 0;
+    var metalAmt = metalG * rate;
+
+    var s = sumStones('s');
+    var c, sum, derived = 0, msg = '';
+
+    if (mode === 'rev'){
+      var goal   = num($('goal'));
+      var remain = goal - metalAmt - s.amt;
+      var cct    = ctOf('c');
+      if (goal <= 0)      msg = '合計金額を入力すると、中石の買値を逆算します。';
+      else if (cct <= 0)  msg = '中石の ct を入力してください。割り当てる石がありません。';
+      else if (remain <= 0) msg = '地金と脇石だけで合計金額に達しています。中石は0円になります。';
+      else derived = Math.round(remain / cct);
+      c   = sumStones('c', derived);
+      sum = metalAmt + c.amt + s.amt;
+    } else {
+      c   = sumStones('c');
+      sum = metalAmt + c.amt + s.amt;
+      if (over) msg = '石目の合計が総重量を超えています。地金は0gとして計算しました。';
+    }
+
+    $('mnote').textContent = selected + '　' + metalG.toFixed(2) + 'g × ' + Math.round(rate).toLocaleString('ja-JP') + '円';
+    $('cnote').textContent = c.ct.toFixed(2) + 'ct'
+      + (mode === 'rev' && derived > 0 ? '　逆算 ' + derived.toLocaleString('ja-JP') + '円/ct' : '');
+    $('snote').textContent = s.ct.toFixed(2) + 'ct';
+    $('mval').textContent  = yen(metalAmt);
+    $('cval').textContent  = yen(c.amt);
+    $('sval').textContent  = yen(s.amt);
+    $('total').textContent = yen(sum);
+    $('warn').textContent  = msg;
+    $('warn').classList.toggle('on', msg !== '');
+
+    last = {mode:mode, metal:selected, rate:rate, total:total, metalG:metalG,
+            metalAmt:metalAmt, c:c, s:s, sum:sum, derived:derived};
+  }
+
+  /* ---- 相場の保存（端末内） ---- */
+  var KEY = 'jewelry-quote:rates';
+  function save(){
+    try{
+      var r = {};
+      METALS.forEach(function(m){ r[m.id] = metalBox.querySelector('.mrow[data-id="' + m.id + '"] .mrate').value; });
+      localStorage.setItem(KEY, JSON.stringify({rates:r, selected:selected}));
+    }catch(e){}
+  }
+  function applyRates(r){
+    if (!r) return;
+    METALS.forEach(function(m){
+      if (r[m.id]) metalBox.querySelector('.mrow[data-id="' + m.id + '"] .mrate').value = r[m.id];
+    });
+  }
+  function load(){
+    applyRates(DEFAULTS.rates);
+    if (DEFAULTS.selected) selected = DEFAULTS.selected;
+    try{
+      var raw = localStorage.getItem(KEY);
+      if (raw){
+        var d = JSON.parse(raw);
+        applyRates(d.rates);
+        if (d.selected) selected = d.selected;
+      }
+    }catch(e){}
+    paintMetals();
+    calc();
+  }
+  /* 現在の相場を本文に焼き込んだファイルを書き出す */
+  function exportWithRates(){
+    var cur = {selected:selected, rates:{}};
+    METALS.forEach(function(m){
+      var v = metalBox.querySelector('.mrow[data-id="' + m.id + '"] .mrate').value;
+      if (v) cur.rates[m.id] = v;
+    });
+    var re = /var DEFAULTS = \{[\s\S]*?\}; \/\*RATES\*\//;
+    var clone = document.documentElement.cloneNode(true);
+    clone.removeAttribute('style');
+    clone.querySelector('#center').innerHTML = '';
+    clone.querySelector('#side').innerHTML = '';
+    clone.querySelector('body').classList.remove('rev');
+    clone.querySelector('body').classList.remove('pad-on');
+    Array.prototype.forEach.call(clone.querySelectorAll('.active'), function(x){ x.classList.remove('active'); });
+    clone.querySelector('#mfwd').classList.add('on');
+    clone.querySelector('#mrev').classList.remove('on');
+    clone.querySelector('#warn').textContent = '';
+    clone.querySelector('#warn').classList.remove('on');
+    Array.prototype.forEach.call(clone.querySelectorAll('.mrow'), function(r){ r.classList.remove('on'); });
+    var html = '<!DOCTYPE html>\n' + clone.outerHTML;
+    if (!re.test(html)){ toast('書き出しできませんでした'); return; }
+    html = html.replace(re, 'var DEFAULTS = ' + JSON.stringify(cur) + '; /*RATES*/');
+    try{
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([html], {type:'text/html'}));
+      a.download = 'jewelry-quote.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast('相場入りのファイルを書き出しました');
+    }catch(e){ toast('書き出しできませんでした'); }
+  }
+
+  /* ---- 操作 ---- */
+  $('addc').addEventListener('click', function(){ addStone('c', true); });
+  $('adds').addEventListener('click', function(){ addStone('s', true); });
+  wire($('weight'));
+  wire($('goal'));
+  $('convert').addEventListener('change', calc);
+  $('mfwd').addEventListener('click', function(){ setMode('fwd'); });
+  $('mrev').addEventListener('click', function(){ setMode('rev'); });
+
+  function toast(msg){
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    setTimeout(function(){ t.classList.remove('on'); }, 1600);
+  }
+  $('copy').addEventListener('click', function(){
+    var t = [
+      '地金 ' + last.metal + ' ' + last.metalG.toFixed(2) + 'g × ' + Math.round(last.rate).toLocaleString('ja-JP') + '円/g = ' + yen(last.metalAmt),
+      '中石 ' + last.c.ct.toFixed(2) + 'ct = ' + yen(last.c.amt)
+        + (last.mode === 'rev' && last.derived > 0 ? '（逆算 ' + last.derived.toLocaleString('ja-JP') + '円/ct）' : ''),
+      '脇石 ' + last.s.ct.toFixed(2) + 'ct = ' + yen(last.s.amt),
+      '総重量 ' + last.total.toFixed(2) + 'g',
+      '合計 ' + yen(last.sum)
+    ].join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){ toast('内訳をコピーしました'); },
+        function(){ toast('コピーできませんでした'); });
+    } else {
+      toast('コピーできませんでした');
+    }
+  });
+  $('embed').addEventListener('click', exportWithRates);
+  $('reset').addEventListener('click', function(){
+    closePad();
+    $('weight').value = '';
+    $('goal').value = '';
+    ['center','side'].forEach(function(id){ $(id).innerHTML = ''; });
+    addStone('c'); addStone('s');
+    calc();
+    toast('相場だけ残して消しました');
+  });
+
+  /* ---- 初期化 ---- */
+  paintMetals();
+  addStone('c');
+  addStone('s');
+  calc();
+  load();
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
