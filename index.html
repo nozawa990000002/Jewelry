@@ -174,9 +174,9 @@
   .warn{margin:10px 0 0;font-size:12px;line-height:1.4;color:var(--warn);min-height:2.8em;visibility:hidden}
   .warn.on{visibility:visible}
 
-  .tools{display:flex;gap:8px;margin-top:2px}
+  .tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
   .tools button{
-    flex:1;font-family:var(--serif);font-size:12.5px;letter-spacing:.06em;
+    flex:1 1 28%;font-family:var(--serif);font-size:12.5px;letter-spacing:.06em;
     color:var(--soft);background:transparent;border:1px solid var(--rule);
     border-radius:2px;padding:9px 0;cursor:pointer;
   }
@@ -198,6 +198,37 @@
     color:var(--ink);font-weight:600;
     border-bottom-style:dashed;
   }
+
+  /* 履歴シート */
+  .sheet{
+    display:none;position:fixed;inset:0;z-index:20;
+    background:var(--tray);
+    padding:0 14px calc(20px + env(safe-area-inset-bottom));
+    padding-top:calc(16px + env(safe-area-inset-top));
+    overflow-y:auto;
+  }
+  body.sheet-on .sheet{display:block}
+  .sheet-in{max-width:520px;margin:0 auto}
+  .sheet h2{margin:0 0 12px}
+  .sheet h2 button{
+    font-family:var(--serif);font-size:12.5px;letter-spacing:.06em;
+    color:var(--soft);background:transparent;border:1px solid var(--rule);
+    border-radius:2px;padding:7px 14px;cursor:pointer;
+  }
+  .hrow{
+    display:flex;align-items:center;gap:10px;
+    background:var(--slip);border:1px solid var(--rule);border-radius:3px;
+    padding:10px 12px;margin-bottom:8px;
+  }
+  .hmain{
+    flex:1;min-width:0;text-align:left;
+    background:transparent;border:0;padding:0;cursor:pointer;
+  }
+  .hname{display:block;font-family:var(--serif);font-size:14px;color:var(--ink)}
+  .hsub{display:block;font-size:11px;color:var(--soft);margin-top:2px}
+  .htotal{font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+  .hdel{border:0;background:transparent;color:var(--soft);font-size:17px;padding:2px 0 2px 6px;cursor:pointer}
+  .hempty{font-size:13px;color:var(--soft)}
 
   /* 入力中のフィールド */
   input.active{
@@ -267,7 +298,7 @@
     <h2>合計金額<span class="count">中石の買値を逆算します</span></h2>
     <div class="field">
       <span class="flabel">買取合計</span>
-      <input type="text" id="goal" inputmode="numeric" placeholder="0">
+      <input type="text" id="goal" class="yen" inputmode="numeric" placeholder="0">
       <span class="funit">円</span>
     </div>
   </section>
@@ -320,11 +351,20 @@
   </section>
 
   <div class="tools">
+    <button id="hsave">保存</button>
+    <button id="hist">履歴</button>
     <button id="copy">内訳コピー</button>
     <button id="embed">相場を保存</button>
     <button id="reset">入力を消す</button>
   </div>
 </main>
+
+<div class="sheet" id="sheet">
+  <div class="sheet-in">
+    <h2>履歴<button type="button" id="hclose">閉じる</button></h2>
+    <div id="hlist"></div>
+  </div>
+</div>
 
 <div id="dock">
   <div class="bar">
@@ -367,6 +407,10 @@
   var selected = 'K18';
   var mode = 'fwd';
   var $ = function(id){ return document.getElementById(id); };
+  var fmt = function(v){
+    var d = String(v).replace(/[^0-9]/g,'');
+    return d ? parseInt(d,10).toLocaleString('ja-JP') : '';
+  };
   var num = function(el){ var v = parseFloat(String(el.value).replace(/[^0-9.\-]/g,'')); return isFinite(v) && v > 0 ? v : 0; };
   var yen = function(n){ return '¥' + Math.round(n).toLocaleString('ja-JP'); };
 
@@ -379,7 +423,7 @@
     row.style.setProperty('--accent', m.c);
     row.innerHTML =
       '<button type="button" class="mname">' + m.id + '</button>' +
-      '<input type="text" class="mrate" inputmode="decimal" placeholder="0">' +
+      '<input type="text" class="mrate yen" inputmode="decimal" placeholder="0">' +
       '<span class="munit">円/g</span>';
     row.querySelector('.mname').addEventListener('click', function(){
       selected = m.id;
@@ -413,7 +457,7 @@
       '<button type="button" class="sdel" aria-label="この石を削除">×</button></div>' +
       '<div class="sfields">' +
         '<span class="sf"><input type="text" class="sct" inputmode="decimal" placeholder="0.00"><em>ct</em></span>' +
-        '<span class="sf"><input type="text" class="sunit" inputmode="decimal" placeholder="0"><em>円/ct</em></span>' +
+        '<span class="sf"><input type="text" class="sunit yen" inputmode="decimal" placeholder="0"><em>円/ct</em></span>' +
       '</div>';
     row.querySelector('.sdel').addEventListener('click', function(){
       if (active && row.contains(active)) closePad();
@@ -452,7 +496,7 @@
     var ct = 0, amt = 0;
     Array.prototype.forEach.call(boxOf(kind).children, function(row){
       var f = row.querySelector('.sunit');
-      if (forced !== undefined) f.value = forced > 0 ? String(forced) : '';
+      if (forced !== undefined) f.value = forced > 0 ? fmt(forced) : '';
       var c = num(row.querySelector('.sct'));
       var u = num(f);
       ct += c; amt += c * u;
@@ -533,19 +577,23 @@
   }
   function press(k){
     if (!active) return;
-    if (k === 'next'){ nextField(); }
-    else if (k === 'done'){ closePad(); }
-    else if (k === 'del'){ active.value = String(active.value).slice(0, -1); fresh = false; }
-    else {
+    if (k === 'next'){ nextField(); return; }
+    if (k === 'done'){ closePad(); return; }
+    var isYen = active.classList.contains('yen');
+    var raw = String(active.value).replace(/,/g, '');
+    if (fresh && k !== 'del') raw = '';
+    if (k === 'del'){
+      raw = raw.slice(0, -1);
+    } else if (k === '.'){
+      if (isYen) return;
+      if (raw.indexOf('.') >= 0) return;
+      raw = (raw === '' ? '0' : raw) + '.';
+    } else {
       if (fresh && k === '000') k = '0';
-      var v = fresh ? '' : String(active.value);
-      if (k === '.'){
-        if (v.indexOf('.') >= 0) return;
-        if (v === '') v = '0';
-      }
-      active.value = v + k;
-      fresh = false;
+      raw = raw + k;
     }
+    fresh = false;
+    active.value = isYen ? fmt(raw) : raw;
     calc();
     save();
   }
@@ -610,7 +658,7 @@
   function applyRates(r){
     if (!r) return;
     METALS.forEach(function(m){
-      if (r[m.id]) metalBox.querySelector('.mrow[data-id="' + m.id + '"] .mrate').value = r[m.id];
+      if (r[m.id]) metalBox.querySelector('.mrow[data-id="' + m.id + '"] .mrate').value = fmt(r[m.id]);
     });
   }
   function load(){
@@ -661,6 +709,97 @@
     }catch(e){ toast('書き出しできませんでした'); }
   }
 
+  /* ---- 履歴（直近10件） ---- */
+  var HKEY = 'jewelry-quote:history';
+  function hload(){
+    try{ return JSON.parse(localStorage.getItem(HKEY)) || []; }catch(e){ return []; }
+  }
+  function hput(list){
+    try{ localStorage.setItem(HKEY, JSON.stringify(list.slice(0, 10))); }catch(e){}
+  }
+  function grab(kind){
+    var out = [];
+    Array.prototype.forEach.call(boxOf(kind).children, function(row){
+      out.push([row.querySelector('.sct').value, row.querySelector('.sunit').value]);
+    });
+    return out;
+  }
+  function saveRecord(){
+    var name = '';
+    try{
+      var r = window.prompt('名前（空のままでも保存できます）', '');
+      if (r === null) return;
+      name = r.replace(/^\s+|\s+$/g, '');
+    }catch(e){}
+    var mr = metalBox.querySelector('.mrow.on .mrate');
+    var list = hload();
+    list.unshift({
+      t: Date.now(), n: name, mode: mode, m: selected,
+      r: mr ? mr.value : '', w: $('weight').value, g: $('goal').value,
+      c: grab('c'), s: grab('s'), total: last.sum || 0
+    });
+    hput(list);
+    toast(name ? name + ' を保存しました' : '履歴に保存しました');
+  }
+  function restore(rec){
+    setMode(rec.mode === 'rev' ? 'rev' : 'fwd');
+    if (rec.m) selected = rec.m;
+    paintMetals();
+    var mr = metalBox.querySelector('.mrow.on .mrate');
+    if (mr) mr.value = fmt(rec.r || '');
+    $('weight').value = rec.w || '';
+    $('goal').value = fmt(rec.g || '');
+    ['c','s'].forEach(function(k){
+      var rows = (k === 'c' ? rec.c : rec.s) || [];
+      if (!rows.length) rows = [['','']];
+      boxOf(k).innerHTML = '';
+      rows.forEach(function(v){
+        addStone(k);
+        var row = boxOf(k).lastElementChild;
+        row.querySelector('.sct').value = v[0] || '';
+        row.querySelector('.sunit').value = v[1] || '';
+      });
+    });
+    closeSheet();
+    closePad();
+    calc();
+  }
+  function closeSheet(){ document.body.classList.remove('sheet-on'); }
+  function openSheet(){
+    var list = hload(), box = $('hlist');
+    box.innerHTML = '';
+    if (!list.length){
+      var p = document.createElement('p');
+      p.className = 'hempty';
+      p.textContent = 'まだ履歴がありません。入力後に「保存」を押すと、直近10件まで残ります。';
+      box.appendChild(p);
+    }
+    list.forEach(function(rec, i){
+      var d = new Date(rec.t);
+      var when = (d.getMonth() + 1) + '/' + d.getDate() + ' '
+               + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+      var el = document.createElement('div');
+      el.className = 'hrow';
+      el.innerHTML = '<button type="button" class="hmain"><span class="hname"></span><span class="hsub"></span></button>'
+                   + '<span class="htotal"></span>'
+                   + '<button type="button" class="hdel" aria-label="削除">×</button>';
+      el.querySelector('.hname').textContent = rec.n || '名前なし';
+      el.querySelector('.hsub').textContent = when + '　' + (rec.m || '') + '　' + (rec.w || '0') + 'g'
+                   + (rec.mode === 'rev' ? '　逆算' : '');
+      el.querySelector('.htotal').textContent = yen(rec.total || 0);
+      el.querySelector('.hmain').addEventListener('click', function(){ restore(rec); });
+      el.querySelector('.hdel').addEventListener('click', function(){
+        var cur = hload();
+        cur.splice(i, 1);
+        hput(cur);
+        openSheet();
+      });
+      box.appendChild(el);
+    });
+    closePad();
+    document.body.classList.add('sheet-on');
+  }
+
   /* ---- 操作 ---- */
   $('addc').addEventListener('click', function(){ addStone('c', true); });
   $('adds').addEventListener('click', function(){ addStone('s', true); });
@@ -693,6 +832,9 @@
     }
   });
   $('embed').addEventListener('click', exportWithRates);
+  $('hsave').addEventListener('click', saveRecord);
+  $('hist').addEventListener('click', openSheet);
+  $('hclose').addEventListener('click', closeSheet);
   $('reset').addEventListener('click', function(){
     closePad();
     $('weight').value = '';
