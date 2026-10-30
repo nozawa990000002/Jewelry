@@ -142,6 +142,7 @@
 
   .switch{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;color:var(--soft)}
   .switch input{width:17px;height:17px;accent-color:var(--gold);margin:0}
+  .taxnote{margin:6px 0 0 25px;font-size:11.5px;color:var(--soft);min-height:1.4em}
 
   /* 石 */
   .srow{border-top:1px solid var(--rule);padding:9px 0 4px}
@@ -306,6 +307,11 @@
   <section>
     <h2>地金<span class="count">相場を入力し、対象をタップ</span></h2>
     <div id="metals"></div>
+    <label class="switch">
+      <input type="checkbox" id="taxin">
+      入力した相場は税込（1.1で割って税抜で計算）
+    </label>
+    <p class="taxnote" id="taxnote"></p>
   </section>
 
   <section>
@@ -394,7 +400,7 @@
 <script>
 (function(){
   var DEFAULTS = {"selected":"K18","rates":{}}; /*RATES*/
-  var MAX = 6, CT_G = 0.2;
+  var MAX = 6, CT_G = 0.2, TAX = 1.1;
   var METALS = [
     {id:'K18',   c:'var(--gold)'},
     {id:'K14',   c:'var(--gold)'},
@@ -603,7 +609,12 @@
   });
   var last = {};
   function calc(){
-    var rate  = rateOf(selected);
+    var listed = rateOf(selected);
+    var taxIn  = $('taxin').checked;
+    var rate   = taxIn ? listed / TAX : listed;
+    $('taxnote').textContent = (taxIn && listed > 0)
+      ? '税込 ' + fmt(listed) + '円/g → 税抜 ' + Math.round(rate).toLocaleString('ja-JP') + '円/g で計算'
+      : '';
     var total = num($('weight'));
     var stoneCt = ctOf('c') + ctOf('s');
     var deduct  = $('convert').checked ? stoneCt * CT_G : stoneCt;
@@ -652,7 +663,7 @@
     try{
       var r = {};
       METALS.forEach(function(m){ r[m.id] = metalBox.querySelector('.mrow[data-id="' + m.id + '"] .mrate').value; });
-      localStorage.setItem(KEY, JSON.stringify({rates:r, selected:selected}));
+      localStorage.setItem(KEY, JSON.stringify({rates:r, selected:selected, tax:$('taxin').checked}));
     }catch(e){}
   }
   function applyRates(r){
@@ -664,12 +675,14 @@
   function load(){
     applyRates(DEFAULTS.rates);
     if (DEFAULTS.selected) selected = DEFAULTS.selected;
+    $('taxin').checked = !!DEFAULTS.tax;
     try{
       var raw = localStorage.getItem(KEY);
       if (raw){
         var d = JSON.parse(raw);
         applyRates(d.rates);
         if (d.selected) selected = d.selected;
+        $('taxin').checked = !!d.tax;
       }
     }catch(e){}
     paintMetals();
@@ -677,7 +690,7 @@
   }
   /* 現在の相場を本文に焼き込んだファイルを書き出す */
   function exportWithRates(){
-    var cur = {selected:selected, rates:{}};
+    var cur = {selected:selected, tax:$('taxin').checked, rates:{}};
     METALS.forEach(function(m){
       var v = metalBox.querySelector('.mrow[data-id="' + m.id + '"] .mrate').value;
       if (v) cur.rates[m.id] = v;
@@ -734,7 +747,7 @@
     var mr = metalBox.querySelector('.mrow.on .mrate');
     var list = hload();
     list.unshift({
-      t: Date.now(), n: name, mode: mode, m: selected,
+      t: Date.now(), n: name, mode: mode, m: selected, tax: $('taxin').checked,
       r: mr ? mr.value : '', w: $('weight').value, g: $('goal').value,
       c: grab('c'), s: grab('s'), total: last.sum || 0
     });
@@ -744,6 +757,7 @@
   function restore(rec){
     setMode(rec.mode === 'rev' ? 'rev' : 'fwd');
     if (rec.m) selected = rec.m;
+    $('taxin').checked = !!rec.tax;
     paintMetals();
     var mr = metalBox.querySelector('.mrow.on .mrate');
     if (mr) mr.value = fmt(rec.r || '');
@@ -806,6 +820,7 @@
   wire($('weight'));
   wire($('goal'));
   $('convert').addEventListener('change', calc);
+  $('taxin').addEventListener('change', function(){ calc(); save(); });
   $('mfwd').addEventListener('click', function(){ setMode('fwd'); });
   $('mrev').addEventListener('click', function(){ setMode('rev'); });
 
